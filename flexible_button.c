@@ -51,7 +51,7 @@ int8_t flex_button_register(flex_button_t *button)
 {
     flex_button_t *curr = btn_head;
 
-    if (!button && (button_cnt > MAX_BUTTON_CNT))
+    if (!button || (button_cnt > MAX_BUTTON_CNT))
     {
         return -1;
     }
