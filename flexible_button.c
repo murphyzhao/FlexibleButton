@@ -33,12 +33,12 @@
 static flex_button_t *btn_head = NULL;
 
 #define EVENT_CB_EXECUTOR(button) if(button->cb) button->cb((flex_button_t*)button)
-#define MAX_BUTTON_CNT 8
+#define MAX_BUTTON_CNT 16
 
-static unsigned char trg = 0;
-static unsigned char cont = 0;
-static uint8_t keydata = 0xFF;
-static uint8_t key_rst_data = 0xFF;
+static uint16_t trg = 0;
+static uint16_t cont = 0;
+static uint16_t keydata = 0xFFFF;
+static uint16_t key_rst_data = 0xFFFF;
 static uint8_t button_cnt = 0;
 
 /**
@@ -50,7 +50,7 @@ static uint8_t button_cnt = 0;
 int8_t flex_button_register(flex_button_t *button)
 {
     flex_button_t *curr = btn_head;
-
+    
     if (!button || (button_cnt > MAX_BUTTON_CNT))
     {
         return -1;
@@ -85,7 +85,7 @@ int8_t flex_button_register(flex_button_t *button)
 static void flex_button_read(void)
 {
     flex_button_t* target;
-    uint8_t read_data = 0;
+    uint16_t read_data = 0;
     keydata = key_rst_data;
     int8_t i = 0;
 
@@ -99,7 +99,7 @@ static void flex_button_read(void)
                   ((target->usr_button_read)() << i));
     }
 
-    read_data = keydata^0xff;
+    read_data = keydata^0xFFFF;
     trg = read_data & (read_data ^ cont);
     cont = read_data;
 }
@@ -283,3 +283,4 @@ void flex_button_scan(void)
     flex_button_read();
     flex_button_process();
 }
+
