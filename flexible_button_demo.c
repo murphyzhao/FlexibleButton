@@ -1,10 +1,10 @@
 /**
- * @File:    example_flexible_button.c
+ * @File:    flexible_button_demo.c
  * @Author:  MurphyZhao
  * @Date:    2018-09-29
  * 
- * Copyright (c) 2018-2018 MurphyZhao <d2014zjt@163.com>
- *               https://github.com/zhaojuntao
+ * Copyright (c) 2018-2019 MurphyZhao <d2014zjt@163.com>
+ *               https://github.com/murphyzhao
  * All rights reserved.
  * License-Identifier: Apache-2.0
  *
@@ -23,7 +23,7 @@
  * Change logs:
  * Date        Author       Notes
  * 2018-09-29  MurphyZhao   First add
- * 
+ * 2019-08-02  MurphyZhao   迁移代码到 murphyzhao 仓库
 */
 
 #include <rtthread.h>
@@ -164,7 +164,6 @@ static void user_button_init(void)
 
     for (i = 0; i < USER_BUTTON_MAX; i ++)
     {
-        user_button[i].status = 0;
         user_button[i].pressed_logic_level = 0;
         user_button[i].click_start_tick = 20;
         user_button[i].short_press_start_tick = 100;
@@ -195,4 +194,6 @@ int flex_button_main(void)
 
     return 0;
 }
+#ifdef FINSH_USING_MSH
 INIT_APP_EXPORT(flex_button_main);
+#endif
