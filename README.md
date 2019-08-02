@@ -280,3 +280,7 @@ void flex_button_scan(void);
 - 感谢 [**rt-thread**](https://mp.weixin.qq.com/s/HJEcSXhykBq1T5Hx0TdjMw) 的支持
 - 感谢 [**电子发烧友**](https://mp.weixin.qq.com/s/mQFyrPAvz_TSktQLrSqQfA) 的支持
 - 感谢 [**威驰电子**](https://mp.weixin.qq.com/s/oAwFXPostMFBtb2EGxTdig) 的支持
+
+## 友情链接
+
+- RT-Thread [IoT Board](https://github.com/RT-Thread/IoT_Board) 开发板
