@@ -6,9 +6,15 @@ cwd = GetCurrentDir()
 
 src = []
 
-src += Glob('*.c')
+src += Split('''
+flexible_button.c
+''')
+
+if GetDepend(['PKG_USING_FLEXIBLE_BUTTON_DEMO']):
+    src += Glob("flexible_button_demo.c")
+
 CPPPATH = [cwd]
 
-group = DefineGroup('flex_button', src, depend = [], CPPPATH = CPPPATH)
+group = DefineGroup('flex_button', src, depend = ['PKG_USING_FLEXIBLE_BUTTON'], CPPPATH = CPPPATH)
 
 Return('group')
