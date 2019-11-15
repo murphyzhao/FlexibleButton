@@ -157,10 +157,10 @@ static void user_button_init(void)
     user_button[USER_BUTTON_2].usr_button_read = button_key2_read;
     user_button[USER_BUTTON_3].usr_button_read = button_keywkup_read;
 
-    rt_pin_mode(PIN_KEY0, PIN_MODE_INPUT); /* set KEY pin mode to input */
-    rt_pin_mode(PIN_KEY1, PIN_MODE_INPUT); /* set KEY pin mode to input */
-    rt_pin_mode(PIN_KEY2, PIN_MODE_INPUT); /* set KEY pin mode to input */
-    rt_pin_mode(PIN_WK_UP, PIN_MODE_INPUT); /* set KEY pin mode to input */
+    rt_pin_mode(PIN_KEY0, PIN_MODE_INPUT_PULLUP); /* set KEY pin mode to input */
+    rt_pin_mode(PIN_KEY1, PIN_MODE_INPUT_PULLUP); /* set KEY pin mode to input */
+    rt_pin_mode(PIN_KEY2, PIN_MODE_INPUT_PULLUP); /* set KEY pin mode to input */
+    rt_pin_mode(PIN_WK_UP, PIN_MODE_INPUT_PULLDOWN); /* set KEY pin mode to input */
 
     for (i = 0; i < USER_BUTTON_MAX; i ++)
     {
