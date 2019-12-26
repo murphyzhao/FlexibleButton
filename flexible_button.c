@@ -23,23 +23,65 @@
  * Change logs:
  * Date        Author       Notes
  * 2018-09-29  MurphyZhao   First add
- * 2019-08-02  MurphyZhao   迁移代码到 murphyzhao 仓库
+ * 2019-08-02  MurphyZhao   Migrate code to github.com/murphyzhao account
+ * 2019-12-26  MurphyZhao   Refactor code and implement combos
  * 
 */
 
 #include "flexible_button.h"
-#include <string.h>
-#include <stdio.h>
+
+#ifndef NULL
+#define NULL 0
+#endif
+
+#define EVENT_SET_AND_EXEC_CB(btn, evt)                                        \
+    do                                                                         \
+    {                                                                          \
+        btn->event = evt;                                                      \
+        if(btn->cb)                                                            \
+            btn->cb((flex_button_t*)btn);                                      \
+    } while(0);
+
+/**
+ * BTN_IS_PRESSED
+ * 
+ * 1: is pressed
+ * 0: is not pressed
+*/
+#define BTN_IS_PRESSED(i) (g_btn_status_reg & (1 << i))
+
+enum FLEX_BTN_STAGE
+{
+    FLEX_BTN_STAGE_DEFAULT = 0,
+    FLEX_BTN_STAGE_DOWN    = 1,
+    FLEX_BTN_STAGE_COMBOS  = 2
+};
+
+typedef uint32_t btn_type_t;
 
 static flex_button_t *btn_head = NULL;
 
-#define EVENT_CB_EXECUTOR(button) if(button->cb) button->cb((flex_button_t*)button)
-#define MAX_BUTTON_CNT 16
+/**
+ * g_logic_level
+ * 
+ * The logic level of the button pressed, 
+ * Each bit represents a button.
+ * 
+ * First registered button, the logic level of the button pressed is 
+ * at the low bit of g_logic_level.
+*/
+btn_type_t g_logic_level = (btn_type_t)0;
 
-static uint16_t trg = 0;
-static uint16_t cont = 0;
-static uint16_t keydata = 0xFFFF;
-static uint16_t key_rst_data = 0xFFFF;
+/**
+ * g_btn_status_reg
+ * 
+ * The status register of all button, each bit records the pressing state of a button.
+ * 
+ * First registered button, the pressing state of the button is 
+ * at the low bit of g_btn_status_reg.
+*/
+btn_type_t g_btn_status_reg = (btn_type_t)0;
+
 static uint8_t button_cnt = 0;
 
 /**
@@ -52,7 +94,7 @@ int8_t flex_button_register(flex_button_t *button)
 {
     flex_button_t *curr = btn_head;
     
-    if (!button || (button_cnt > MAX_BUTTON_CNT))
+    if (!button || (button_cnt > sizeof(btn_type_t) * 8))
     {
         return -1;
     }
@@ -66,14 +108,25 @@ int8_t flex_button_register(flex_button_t *button)
         curr = curr->next;
     }
 
+    /**
+     * First registered button is at the end of the 'linked list'.
+     * btn_head points to the head of the 'linked list'.
+    */
     button->next = btn_head;
-    button->status = 0;
+    button->status = FLEX_BTN_STAGE_DEFAULT;
     button->event = FLEX_BTN_PRESS_NONE;
     button->scan_cnt = 0;
     button->click_cnt = 0;
+    button->max_combos_click_solt = MAX_COMBOS_CLICK_SOLT;
     btn_head = button;
-    key_rst_data = key_rst_data << 1;
+
+    /**
+     * First registered button, the logic level of the button pressed is 
+     * at the low bit of g_logic_level.
+    */
+    g_logic_level |= (button->pressed_logic_level << button_cnt);
     button_cnt ++;
+
     return button_cnt;
 }
 
@@ -85,24 +138,20 @@ int8_t flex_button_register(flex_button_t *button)
 */
 static void flex_button_read(void)
 {
+    uint8_t i;
     flex_button_t* target;
-    uint16_t read_data = 0;
-    keydata = key_rst_data;
-    int8_t i = 0;
 
-    for(target = btn_head, i = 0;
+    /* The button that was registered first, the button value is in the low position of raw_data */
+    btn_type_t raw_data = 0;
+
+    for(target = btn_head, i = button_cnt - 1;
         (target != NULL) && (target->usr_button_read != NULL);
-        target = target->next, i ++)
+        target = target->next, i--)
     {
-        keydata = keydata |
-                  (target->pressed_logic_level == 1 ?
-                  ((!(target->usr_button_read)()) << i) :
-                  ((target->usr_button_read)() << i));
+        raw_data = raw_data | ((target->usr_button_read)(target) << i);
     }
 
-    read_data = keydata^0xFFFF;
-    trg = read_data & (read_data ^ cont);
-    cont = read_data;
+    g_btn_status_reg = (~raw_data) ^ g_logic_level;
 }
 
 /**
@@ -114,144 +163,126 @@ static void flex_button_read(void)
 */
 static void flex_button_process(void)
 {
-    int8_t i = 0;
+    uint8_t i;
     flex_button_t* target;
 
     for (target = btn_head, i = 0; target != NULL; target = target->next, i ++)
     {
-        if (target->status > 0)
+        if (target->status > FLEX_BTN_STAGE_DEFAULT)
         {
             target->scan_cnt ++;
+            if (target->scan_cnt >= ((1 << (sizeof(target->scan_cnt) * 8)) - 1))
+            {
+                target->scan_cnt = target->long_hold_start_tick;
+            }
         }
 
         switch (target->status)
         {
-            case 0: /* is default */
-                if (trg & (1 << i)) /* is pressed */
+        case FLEX_BTN_STAGE_DEFAULT: // stage: default(button up)
+            if (BTN_IS_PRESSED(i)) // is pressed
+            {
+                target->scan_cnt = 0;
+                target->click_cnt = 0;
+
+                EVENT_SET_AND_EXEC_CB(target, FLEX_BTN_PRESS_DOWN);
+
+                /* swtich to button down stage */
+                target->status = FLEX_BTN_STAGE_DOWN;
+            }
+            else
+            {
+                target->event = FLEX_BTN_PRESS_NONE;
+            }
+            break;
+
+        case FLEX_BTN_STAGE_DOWN: // stage: button down
+            if (BTN_IS_PRESSED(i)) // is pressed
+            {
+                if (target->click_cnt > 0) // combos
                 {
-                    target->scan_cnt = 0;
-                    target->click_cnt = 0;
-                    target->status = 1;
-                    target->event = FLEX_BTN_PRESS_DOWN;
-                    EVENT_CB_EXECUTOR(target);
+                    if (target->scan_cnt > target->max_combos_click_solt)
+                    {
+                        EVENT_SET_AND_EXEC_CB(target, 
+                            target->click_cnt < FLEX_BTN_PRESS_REPEAT_CLICK ? 
+                                target->click_cnt :
+                                FLEX_BTN_PRESS_REPEAT_CLICK);
+
+                        /* swtich to button down stage */
+                        target->status = FLEX_BTN_STAGE_DOWN;
+                        target->scan_cnt = 0;
+                        target->click_cnt = 0;
+                    }
+                }
+                else if (target->scan_cnt >= target->long_hold_start_tick)
+                {
+                    if (target->event != FLEX_BTN_PRESS_LONG_HOLD)
+                    {
+                        EVENT_SET_AND_EXEC_CB(target, FLEX_BTN_PRESS_LONG_HOLD);
+                    }
+                }
+                else if (target->scan_cnt >= target->long_press_start_tick)
+                {
+                    if (target->event != FLEX_BTN_PRESS_LONG_START)
+                    {
+                        EVENT_SET_AND_EXEC_CB(target, FLEX_BTN_PRESS_LONG_START);
+                    }
+                }
+                else if (target->scan_cnt >= target->short_press_start_tick)
+                {
+                    if (target->event != FLEX_BTN_PRESS_SHORT_START)
+                    {
+                        EVENT_SET_AND_EXEC_CB(target, FLEX_BTN_PRESS_SHORT_START);
+                    }
+                }
+            }
+            else // is up
+            {
+                if (target->scan_cnt >= target->long_hold_start_tick)
+                {
+                    EVENT_SET_AND_EXEC_CB(target, FLEX_BTN_PRESS_LONG_HOLD_UP);
+                    target->status = FLEX_BTN_STAGE_DEFAULT;
+                }
+                else if (target->scan_cnt >= target->long_press_start_tick)
+                {
+                    EVENT_SET_AND_EXEC_CB(target, FLEX_BTN_PRESS_LONG_UP);
+                    target->status = FLEX_BTN_STAGE_DEFAULT;
+                }
+                else if (target->scan_cnt >= target->short_press_start_tick)
+                {
+                    EVENT_SET_AND_EXEC_CB(target, FLEX_BTN_PRESS_SHORT_UP);
+                    target->status = FLEX_BTN_STAGE_DEFAULT;
                 }
                 else
                 {
-                    target->event = FLEX_BTN_PRESS_NONE;
+                    /* swtich to combos stage */
+                    target->status = FLEX_BTN_STAGE_COMBOS;
+                    target->click_cnt ++;
                 }
-                break;
+            }
+            break;
 
-            case 1: /* is pressed */
-                if (!(cont & (1 << i))) /* is up */
+        case FLEX_BTN_STAGE_COMBOS: // stage: combos
+            if (BTN_IS_PRESSED(i)) // is pressed
+            {
+                /* swtich to button down stage */
+                target->status = FLEX_BTN_STAGE_DOWN;
+                target->scan_cnt = 0;
+            }
+            else
+            {
+                if (target->scan_cnt > target->max_combos_click_solt)
                 {
-                    target->status = 2;
-                }
-                else if ((target->scan_cnt >= target->short_press_start_tick) &&
-                        (target->scan_cnt < target->long_press_start_tick))
-                {
-                    target->status = 4;
-                    target->event = FLEX_BTN_PRESS_SHORT_START;
-                    EVENT_CB_EXECUTOR(target);
-                }
-                break;
+                    EVENT_SET_AND_EXEC_CB(target, 
+                        target->click_cnt < FLEX_BTN_PRESS_REPEAT_CLICK ? 
+                            target->click_cnt :
+                            FLEX_BTN_PRESS_REPEAT_CLICK);
 
-            case 2: /* is up */
-                if ((target->scan_cnt < target->click_start_tick))
-                {
-                    target->click_cnt++; // 1
-                    
-                    if (target->click_cnt == 1)
-                    {
-                        target->status = 3;  /* double click check */
-                    }
-                    else
-                    {
-                        target->click_cnt = 0;
-                        target->status = 0;
-                        target->event = FLEX_BTN_PRESS_DOUBLE_CLICK;
-                        EVENT_CB_EXECUTOR(target);
-                    }
+                    /* swtich to default stage */
+                    target->status = FLEX_BTN_STAGE_DEFAULT;
                 }
-                else if ((target->scan_cnt >= target->click_start_tick) &&
-                    (target->scan_cnt < target->short_press_start_tick))
-                {
-                    target->click_cnt = 0;
-                    target->status = 0;
-                    target->event = FLEX_BTN_PRESS_CLICK;
-                    EVENT_CB_EXECUTOR(target);
-                }
-                else if ((target->scan_cnt >= target->short_press_start_tick) &&
-                    (target->scan_cnt < target->long_press_start_tick))
-                {
-                    target->click_cnt = 0;
-                    target->status = 0;
-                    target->event = FLEX_BTN_PRESS_SHORT_UP;
-                    EVENT_CB_EXECUTOR(target);
-                }
-                else if ((target->scan_cnt >= target->long_press_start_tick) &&
-                    (target->scan_cnt < target->long_hold_start_tick))
-                {
-                    target->click_cnt = 0;
-                    target->status = 0;
-                    target->event = FLEX_BTN_PRESS_LONG_UP;
-                    EVENT_CB_EXECUTOR(target);
-                }
-                else if (target->scan_cnt >= target->long_hold_start_tick)
-                {
-                    /* long press hold up, not deal */
-                    target->click_cnt = 0;
-                    target->status = 0;
-                    target->event = FLEX_BTN_PRESS_LONG_HOLD_UP;
-                    EVENT_CB_EXECUTOR(target);
-                }
-                break;
-
-            case 3: /* double click check */
-                if (trg & (1 << i))
-                {
-                    target->click_cnt++;
-                    target->status = 2;
-                    target->scan_cnt --;
-                }
-                else if (target->scan_cnt >= target->click_start_tick)
-                {
-                    target->status = 2;
-                }
-                break;
-
-            case 4: /* is short pressed */
-                if (!(cont & (1 << i))) /* is up */
-                {
-                    target->status = 2;
-                }
-                else if ((target->scan_cnt >= target->long_press_start_tick) &&
-                        (target->scan_cnt < target->long_hold_start_tick))
-                {
-                    target->status = 5;
-                    target->event = FLEX_BTN_PRESS_LONG_START;
-                    EVENT_CB_EXECUTOR(target);
-                }
-                break;
-
-            case 5: /* is long pressed */
-                if (!(cont & (1 << i))) /* is up */
-                {
-                    target->status = 2;
-                }
-                else if (target->scan_cnt >= target->long_hold_start_tick)
-                {
-                    target->status = 6;
-                    target->event = FLEX_BTN_PRESS_LONG_HOLD;
-                    EVENT_CB_EXECUTOR(target);
-                }
-                break;
-
-            case 6: /* is long pressed */
-                if (!(cont & (1 << i))) /* is up */
-                {
-                    target->status = 2;
-                }
-                break;
+            }
+            break;
         }
     }
 }
@@ -284,4 +315,3 @@ void flex_button_scan(void)
     flex_button_read();
     flex_button_process();
 }
-

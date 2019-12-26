@@ -23,7 +23,8 @@
  * Change logs:
  * Date        Author       Notes
  * 2018-09-29  MurphyZhao   First add
- * 2019-08-02  MurphyZhao   迁移代码到 murphyzhao 仓库
+ * 2019-08-02  MurphyZhao   Migrate code to github.com/murphyzhao account
+ * 2019-12-26  MurphyZhao   Refactor code and implement combos
  * 
 */
 
@@ -31,7 +32,12 @@
 #define __FLEXIBLE_BUTTON_H__
 
 #include "stdint.h"
-#include "string.h"
+
+#define FLEX_BTN_SCAN_FREQ_HZ 50 // How often flex_button_scan () is called
+#define FLEX_MS_TO_SCAN_CNT(ms) (ms / (1000 / FLEX_BTN_SCAN_FREQ_HZ))
+
+/* Combos slot, default 300ms */
+#define MAX_COMBOS_CLICK_SOLT (FLEX_MS_TO_SCAN_CNT(300))
 
 typedef void (*flex_button_response_callback)(void*);
 
@@ -40,6 +46,7 @@ typedef enum
     FLEX_BTN_PRESS_DOWN = 0,
     FLEX_BTN_PRESS_CLICK,
     FLEX_BTN_PRESS_DOUBLE_CLICK,
+    FLEX_BTN_PRESS_REPEAT_CLICK,
     FLEX_BTN_PRESS_SHORT_START,
     FLEX_BTN_PRESS_SHORT_UP,
     FLEX_BTN_PRESS_LONG_START,
@@ -56,55 +63,82 @@ typedef enum
  * @brief Button data structure
  *        Below are members that need to user init before scan.
  * 
- * @member pressed_logic_level:    Logic level when the button is pressed.
- *                                 Must be inited by 'flex_button_register' API
- *                                                     before start button scan.
- * @member debounce_tick:          The time of button debounce.
- *                                 The value is number of button scan cycles.
- * @member click_start_tick:       The time of start click.
- *                                 The value is number of button scan cycles.
- * @member short_press_start_tick: The time of short press start tick.
- *                                 The value is number of button scan cycles.
- * @member long_press_start_tick:  The time of long press start tick.
- *                                 The value is number of button scan cycles.
- * @member long_hold_start_tick:   The time of hold press start tick.
- *                                 The value is number of button scan cycles.
- * @member usr_button_read:        Read the logic level value of specified button.
- * @member cb:                     Button event callback function.
- *                                 If use 'flex_button_event_read' api,
- *                                 you don't need to initialize the 'cb' member.
- * @member next :                  Next button struct
+ * @member next
+ *         Internal use.
+ *         One-way linked list, pointing to the next button.
+ * 
+ * @member usr_button_read
+ *         User function is used to read button vaule.
+ * 
+ * @member cb
+ *         Button event callback function.
+ * 
+ * @member scan_cnt
+ *         Internal use, user read-only.
+ *         Number of scans, counted when the button is pressed, plus one per scan cycle.
+ * 
+ * @member click_cnt
+ *         Internal use, user read-only.
+ *         Number of button clicks
+ * 
+ * @member max_combos_click_solt
+ *         Combo slot. Default 'MAX_COMBOS_CLICK_SOLT'.
+ *         Need to use FLEX_MS_TO_SCAN_CNT to convert milliseconds into scan cnts.
+ * 
+ * @member debounce_tick
+ *         Debounce. Not used yet.
+ *         Need to use FLEX_MS_TO_SCAN_CNT to convert milliseconds into scan cnts.
+ * 
+ * @member short_press_start_tick
+ *         Short press start time. Requires user configuration.
+ *         Need to use FLEX_MS_TO_SCAN_CNT to convert milliseconds into scan cnts.
+ * 
+ * @member long_press_start_tick
+ *         Long press start time. Requires user configuration.
+ *         Need to use FLEX_MS_TO_SCAN_CNT to convert milliseconds into scan cnts.
+ * 
+ * @member long_hold_start_tick
+ *         Long hold press start time. Requires user configuration.
+ * 
+ * @member id
+ *         Button id. Requires user configuration.
+ *         When multiple buttons use the same button callback function, 
+ *         they are used to distinguish the buttons. 
+ *         Each button id must be unique.
+ * 
+ * @member pressed_logic_level
+ *         Requires user configuration.
+ *         The logic level of the button pressed, each bit represents a button.
+ * 
+ * @member event
+ *         Internal use, users can call 'flex_button_event_read' to get current button event.
+ *         Used to record the current button event.
+ * 
+ * @member status
+ *         Internal use, user unavailable.
+ *         Used to record the current state of buttons.
+ * 
 */
 typedef struct flex_button
 {
-    uint8_t pressed_logic_level : 1; /* need user to init */
+    struct flex_button* next;
 
-    /**
-     * @event
-     * The event of button in flex_button_evnt_t enum list.
-     * Automatically initialized to the default value FLEX_BTN_PRESS_NONE
-     *                                      by 'flex_button_register' API.
-    */
-    uint8_t event               : 4;
+    uint8_t  (*usr_button_read)(void *);
+    flex_button_response_callback  cb;
 
-    /**
-     * @status
-     * Used to record the status of the button 
-     * Automatically initialized to the default value 0.
-    */
-    uint8_t status              : 3;
-    uint16_t scan_cnt;  /* default 0. Used to record the number of key scans */
-    uint16_t click_cnt; /* default 0. Used to record the number of key click */
+    uint16_t scan_cnt;
+    uint16_t click_cnt;
+    uint16_t max_combos_click_solt;
 
-    uint16_t debounce_tick;          
-    uint16_t click_start_tick;
+    uint16_t debounce_tick;
     uint16_t short_press_start_tick;
     uint16_t long_press_start_tick;
     uint16_t long_hold_start_tick;
 
-    uint8_t  (*usr_button_read)(void);
-    flex_button_response_callback  cb;
-    struct flex_button* next;
+    uint8_t id;
+    uint8_t pressed_logic_level : 1;
+    uint8_t event               : 4;
+    uint8_t status              : 3;
 } flex_button_t;
 
 #ifdef __cplusplus

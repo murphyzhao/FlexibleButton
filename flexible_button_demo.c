@@ -23,14 +23,31 @@
  * Change logs:
  * Date        Author       Notes
  * 2018-09-29  MurphyZhao   First add
- * 2019-08-02  MurphyZhao   迁移代码到 murphyzhao 仓库
+ * 2019-08-02  MurphyZhao   Migrate code to github.com/murphyzhao account
 */
 
 #include <rtthread.h>
-#include "flexible_button.h"
-#include <stdint.h>
-#include <rtdevice.h>
 #include <board.h>
+
+#include "flexible_button.h"
+
+#ifndef PIN_KEY0
+#define PIN_KEY0 GET_PIN(D, 10)
+#endif
+
+#ifndef PIN_KEY1
+#define PIN_KEY1 GET_PIN(D, 9)
+#endif
+
+#ifndef PIN_KEY2
+#define PIN_KEY2 GET_PIN(D, 8)
+#endif
+
+#ifndef PIN_WK_UP
+#define PIN_WK_UP GET_PIN(C, 13)
+#endif
+
+#define ENUM_TO_STR(e) (#e)
 
 typedef enum
 {
@@ -41,96 +58,71 @@ typedef enum
     USER_BUTTON_MAX
 } user_button_t;
 
+static char *enum_event_string[] = {
+    ENUM_TO_STR(FLEX_BTN_PRESS_DOWN),
+    ENUM_TO_STR(FLEX_BTN_PRESS_CLICK),
+    ENUM_TO_STR(FLEX_BTN_PRESS_DOUBLE_CLICK),
+    ENUM_TO_STR(FLEX_BTN_PRESS_REPEAT_CLICK),
+    ENUM_TO_STR(FLEX_BTN_PRESS_SHORT_START),
+    ENUM_TO_STR(FLEX_BTN_PRESS_SHORT_UP),
+    ENUM_TO_STR(FLEX_BTN_PRESS_LONG_START),
+    ENUM_TO_STR(FLEX_BTN_PRESS_LONG_UP),
+    ENUM_TO_STR(FLEX_BTN_PRESS_LONG_HOLD),
+    ENUM_TO_STR(FLEX_BTN_PRESS_LONG_HOLD_UP),
+    ENUM_TO_STR(FLEX_BTN_PRESS_MAX),
+    ENUM_TO_STR(FLEX_BTN_PRESS_NONE),
+};
+
+static char *enum_btn_id_string[] = {
+    ENUM_TO_STR(USER_BUTTON_0),
+    ENUM_TO_STR(USER_BUTTON_1),
+    ENUM_TO_STR(USER_BUTTON_2),
+    ENUM_TO_STR(USER_BUTTON_3),
+    ENUM_TO_STR(USER_BUTTON_MAX),
+};
+
 static flex_button_t user_button[USER_BUTTON_MAX];
 
-static void btn_0_cb(flex_button_t *btn)
+static uint8_t common_btn_read(void *arg)
 {
-    rt_kprintf("btn_0_cb\n");
-    switch (btn->event)
+    uint8_t value = 0;
+
+    flex_button_t *btn = (flex_button_t *)arg;
+
+    switch (btn->id)
     {
-        case FLEX_BTN_PRESS_DOWN:
-            rt_kprintf("btn_0_cb [FLEX_BTN_PRESS_DOWN]\n");
-            break;
-        case FLEX_BTN_PRESS_CLICK:
-            rt_kprintf("btn_0_cb [FLEX_BTN_PRESS_CLICK]\n");
-            break;
-        case FLEX_BTN_PRESS_DOUBLE_CLICK:
-            rt_kprintf("btn_0_cb [FLEX_BTN_PRESS_DOUBLE_CLICK]\n");
-            break;
-        case FLEX_BTN_PRESS_SHORT_START:
-            rt_kprintf("btn_0_cb [FLEX_BTN_PRESS_SHORT_START]\n");
-            break;
-        case FLEX_BTN_PRESS_SHORT_UP:
-            rt_kprintf("btn_0_cb [FLEX_BTN_PRESS_SHORT_UP]\n");
-            break;
-        case FLEX_BTN_PRESS_LONG_START:
-            rt_kprintf("btn_0_cb [FLEX_BTN_PRESS_LONG_START]\n");
-            break;
-        case FLEX_BTN_PRESS_LONG_UP:
-            rt_kprintf("btn_0_cb [FLEX_BTN_PRESS_LONG_UP]\n");
-            break;
-        case FLEX_BTN_PRESS_LONG_HOLD:
-            rt_kprintf("btn_0_cb [FLEX_BTN_PRESS_LONG_HOLD]\n");
-            break;
-        case FLEX_BTN_PRESS_LONG_HOLD_UP:
-            rt_kprintf("btn_0_cb [FLEX_BTN_PRESS_LONG_HOLD_UP]\n");
-            break;
+    case USER_BUTTON_0:
+        value = rt_pin_read(PIN_KEY0);
+        break;
+    case USER_BUTTON_1:
+        value = rt_pin_read(PIN_KEY1);
+        break;
+    case USER_BUTTON_2:
+        value = rt_pin_read(PIN_KEY2);
+        break;
+    case USER_BUTTON_3:
+        value = rt_pin_read(PIN_WK_UP);
+        break;
+    default:
+        RT_ASSERT(0);
     }
+
+    return value;
 }
 
-static void btn_1_cb(flex_button_t *btn)
+static void common_btn_evt_cb(void *arg)
 {
-    rt_kprintf("btn_1_cb\n");
-    switch (btn->event)
+    flex_button_t *btn = (flex_button_t *)arg;
+
+    rt_kprintf("id: [%d - %s]  event: [%d - %30s]  combos: %d\n", 
+        btn->id, enum_btn_id_string[btn->id],
+        btn->event, enum_event_string[btn->event],
+        btn->click_cnt);
+
+    if (flex_button_event_read(&user_button[USER_BUTTON_0]) == flex_button_event_read(&user_button[USER_BUTTON_1]) == FLEX_BTN_PRESS_CLICK)
     {
-        case FLEX_BTN_PRESS_DOWN:
-            rt_kprintf("btn_1_cb [FLEX_BTN_PRESS_DOWN]\n");
-            break;
-        case FLEX_BTN_PRESS_CLICK:
-            rt_kprintf("btn_1_cb [FLEX_BTN_PRESS_CLICK]\n");
-            break;
-        case FLEX_BTN_PRESS_DOUBLE_CLICK:
-            rt_kprintf("btn_1_cb [FLEX_BTN_PRESS_DOUBLE_CLICK]\n");
-            break;
-        case FLEX_BTN_PRESS_SHORT_START:
-            rt_kprintf("btn_1_cb [FLEX_BTN_PRESS_SHORT_START]\n");
-            break;
-        case FLEX_BTN_PRESS_SHORT_UP:
-            rt_kprintf("btn_1_cb [FLEX_BTN_PRESS_SHORT_UP]\n");
-            break;
-        case FLEX_BTN_PRESS_LONG_START:
-            rt_kprintf("btn_1_cb [FLEX_BTN_PRESS_LONG_START]\n");
-            break;
-        case FLEX_BTN_PRESS_LONG_UP:
-            rt_kprintf("btn_1_cb [FLEX_BTN_PRESS_LONG_UP]\n");
-            break;
-        case FLEX_BTN_PRESS_LONG_HOLD:
-            rt_kprintf("btn_1_cb [FLEX_BTN_PRESS_LONG_HOLD]\n");
-            break;
-        case FLEX_BTN_PRESS_LONG_HOLD_UP:
-            rt_kprintf("btn_1_cb [FLEX_BTN_PRESS_LONG_HOLD_UP]\n");
-            break;
+        rt_kprintf("[combination]: button 0 and button 1\n");
     }
-}
-
-static uint8_t button_key0_read(void)
-{
-    return rt_pin_read(PIN_KEY0);
-}
-
-static uint8_t button_key1_read(void)
-{
-    return rt_pin_read(PIN_KEY1);
-}
-
-static uint8_t button_key2_read(void)
-{
-    return rt_pin_read(PIN_KEY2);
-}
-
-static uint8_t button_keywkup_read(void)
-{
-    return rt_pin_read(PIN_WK_UP);
 }
 
 static void button_scan(void *arg)
@@ -138,7 +130,7 @@ static void button_scan(void *arg)
     while(1)
     {
         flex_button_scan();
-        rt_thread_mdelay(20);
+        rt_thread_mdelay(20); // 20 ms
     }
 }
 
@@ -148,15 +140,6 @@ static void user_button_init(void)
     
     rt_memset(&user_button[0], 0x0, sizeof(user_button));
 
-    user_button[USER_BUTTON_0].usr_button_read = button_key0_read;
-    user_button[USER_BUTTON_0].cb = (flex_button_response_callback)btn_0_cb;
-
-    user_button[USER_BUTTON_1].usr_button_read = button_key1_read;
-    user_button[USER_BUTTON_1].cb = (flex_button_response_callback)btn_1_cb;
-
-    user_button[USER_BUTTON_2].usr_button_read = button_key2_read;
-    user_button[USER_BUTTON_3].usr_button_read = button_keywkup_read;
-
     rt_pin_mode(PIN_KEY0, PIN_MODE_INPUT_PULLUP); /* set KEY pin mode to input */
     rt_pin_mode(PIN_KEY1, PIN_MODE_INPUT_PULLUP); /* set KEY pin mode to input */
     rt_pin_mode(PIN_KEY2, PIN_MODE_INPUT_PULLUP); /* set KEY pin mode to input */
@@ -164,11 +147,13 @@ static void user_button_init(void)
 
     for (i = 0; i < USER_BUTTON_MAX; i ++)
     {
+        user_button[i].id = i;
+        user_button[i].usr_button_read = common_btn_read;
+        user_button[i].cb = common_btn_evt_cb;
         user_button[i].pressed_logic_level = 0;
-        user_button[i].click_start_tick = 20;
-        user_button[i].short_press_start_tick = 100;
-        user_button[i].long_press_start_tick = 200;
-        user_button[i].long_hold_start_tick = 300;
+        user_button[i].short_press_start_tick = FLEX_MS_TO_SCAN_CNT(1500);
+        user_button[i].long_press_start_tick = FLEX_MS_TO_SCAN_CNT(3000);
+        user_button[i].long_hold_start_tick = FLEX_MS_TO_SCAN_CNT(4500);
 
         if (i == USER_BUTTON_3)
         {
