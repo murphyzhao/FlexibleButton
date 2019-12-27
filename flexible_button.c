@@ -40,7 +40,7 @@
         btn->event = evt;                                                      \
         if(btn->cb)                                                            \
             btn->cb((flex_button_t*)btn);                                      \
-    } while(0);
+    } while(0)
 
 /**
  * BTN_IS_PRESSED

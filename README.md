@@ -24,6 +24,15 @@ RT-Thread online packages  --->
 
 配置完成后，输入 `pkgs --update` 下载软件包。
 
+## 资源统计
+
+ARMCC -O0 优化的情况下，FlexibleButton 资源占用如下：
+
+- CODE：798 字节
+- RO DATA：0
+- RW DATA：13 字节
+- ZI DATA：0
+
 ## 快速体验
 
 FlexibleButton 库中提供了一个测试例程 [`./flexible_button_demo.c`](./flexible_button_demo.c)，该例程基于 RT-Thread OS 进行测试，硬件平台选择了 *RT-Thread IoT Board Pandora v2.51* 开发板。当然你可以选择使用其他的 OS，或者使用裸机测试，只需要移除 OS 相关的特性即可。
