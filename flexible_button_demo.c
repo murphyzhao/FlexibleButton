@@ -114,7 +114,7 @@ static void common_btn_evt_cb(void *arg)
 {
     flex_button_t *btn = (flex_button_t *)arg;
 
-    rt_kprintf("id: [%d - %s]  event: [%d - %30s]  combos: %d\n", 
+    rt_kprintf("id: [%d - %s]  event: [%d - %30s]  repeat: %d\n", 
         btn->id, enum_btn_id_string[btn->id],
         btn->event, enum_event_string[btn->event],
         btn->click_cnt);

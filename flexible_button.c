@@ -24,7 +24,7 @@
  * Date        Author       Notes
  * 2018-09-29  MurphyZhao   First add
  * 2019-08-02  MurphyZhao   Migrate code to github.com/murphyzhao account
- * 2019-12-26  MurphyZhao   Refactor code and implement combos
+ * 2019-12-26  MurphyZhao   Refactor code and implement multiple clicks
  * 
 */
 
@@ -54,7 +54,7 @@ enum FLEX_BTN_STAGE
 {
     FLEX_BTN_STAGE_DEFAULT = 0,
     FLEX_BTN_STAGE_DOWN    = 1,
-    FLEX_BTN_STAGE_COMBOS  = 2
+    FLEX_BTN_STAGE_MULTIPLE_CLICK = 2
 };
 
 typedef uint32_t btn_type_t;
@@ -103,7 +103,7 @@ int8_t flex_button_register(flex_button_t *button)
     {
         if(curr == button)
         {
-            return -1;  //already exist.
+            return -1;  /* already exist. */
         }
         curr = curr->next;
     }
@@ -117,7 +117,7 @@ int8_t flex_button_register(flex_button_t *button)
     button->event = FLEX_BTN_PRESS_NONE;
     button->scan_cnt = 0;
     button->click_cnt = 0;
-    button->max_combos_click_solt = MAX_COMBOS_CLICK_SOLT;
+    button->max_multiple_clicks_interval = MAX_MULTIPLE_CLICKS_INTERVAL;
     btn_head = button;
 
     /**
@@ -179,8 +179,8 @@ static void flex_button_process(void)
 
         switch (target->status)
         {
-        case FLEX_BTN_STAGE_DEFAULT: // stage: default(button up)
-            if (BTN_IS_PRESSED(i)) // is pressed
+        case FLEX_BTN_STAGE_DEFAULT: /* stage: default(button up) */
+            if (BTN_IS_PRESSED(i)) /* is pressed */
             {
                 target->scan_cnt = 0;
                 target->click_cnt = 0;
@@ -196,12 +196,12 @@ static void flex_button_process(void)
             }
             break;
 
-        case FLEX_BTN_STAGE_DOWN: // stage: button down
-            if (BTN_IS_PRESSED(i)) // is pressed
+        case FLEX_BTN_STAGE_DOWN: /* stage: button down */
+            if (BTN_IS_PRESSED(i)) /* is pressed */
             {
-                if (target->click_cnt > 0) // combos
+                if (target->click_cnt > 0) /* multiple click */
                 {
-                    if (target->scan_cnt > target->max_combos_click_solt)
+                    if (target->scan_cnt > target->max_multiple_clicks_interval)
                     {
                         EVENT_SET_AND_EXEC_CB(target, 
                             target->click_cnt < FLEX_BTN_PRESS_REPEAT_CLICK ? 
@@ -236,7 +236,7 @@ static void flex_button_process(void)
                     }
                 }
             }
-            else // is up
+            else /* button up */
             {
                 if (target->scan_cnt >= target->long_hold_start_tick)
                 {
@@ -255,15 +255,15 @@ static void flex_button_process(void)
                 }
                 else
                 {
-                    /* swtich to combos stage */
-                    target->status = FLEX_BTN_STAGE_COMBOS;
+                    /* swtich to multiple click stage */
+                    target->status = FLEX_BTN_STAGE_MULTIPLE_CLICK;
                     target->click_cnt ++;
                 }
             }
             break;
 
-        case FLEX_BTN_STAGE_COMBOS: // stage: combos
-            if (BTN_IS_PRESSED(i)) // is pressed
+        case FLEX_BTN_STAGE_MULTIPLE_CLICK: /* stage: multiple click */
+            if (BTN_IS_PRESSED(i)) /* is pressed */
             {
                 /* swtich to button down stage */
                 target->status = FLEX_BTN_STAGE_DOWN;
@@ -271,7 +271,7 @@ static void flex_button_process(void)
             }
             else
             {
-                if (target->scan_cnt > target->max_combos_click_solt)
+                if (target->scan_cnt > target->max_multiple_clicks_interval)
                 {
                     EVENT_SET_AND_EXEC_CB(target, 
                         target->click_cnt < FLEX_BTN_PRESS_REPEAT_CLICK ? 

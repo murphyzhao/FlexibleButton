@@ -24,7 +24,7 @@
  * Date        Author       Notes
  * 2018-09-29  MurphyZhao   First add
  * 2019-08-02  MurphyZhao   Migrate code to github.com/murphyzhao account
- * 2019-12-26  MurphyZhao   Refactor code and implement combos
+ * 2019-12-26  MurphyZhao   Refactor code and implement multiple clicks
  * 
 */
 
@@ -36,8 +36,8 @@
 #define FLEX_BTN_SCAN_FREQ_HZ 50 // How often flex_button_scan () is called
 #define FLEX_MS_TO_SCAN_CNT(ms) (ms / (1000 / FLEX_BTN_SCAN_FREQ_HZ))
 
-/* Combos slot, default 300ms */
-#define MAX_COMBOS_CLICK_SOLT (FLEX_MS_TO_SCAN_CNT(300))
+/* Multiple clicks interval, default 300ms */
+#define MAX_MULTIPLE_CLICKS_INTERVAL (FLEX_MS_TO_SCAN_CNT(300))
 
 typedef void (*flex_button_response_callback)(void*);
 
@@ -81,8 +81,8 @@ typedef enum
  *         Internal use, user read-only.
  *         Number of button clicks
  * 
- * @member max_combos_click_solt
- *         Combo slot. Default 'MAX_COMBOS_CLICK_SOLT'.
+ * @member max_multiple_clicks_interval
+ *         Multiple click interval. Default 'MAX_MULTIPLE_CLICKS_INTERVAL'.
  *         Need to use FLEX_MS_TO_SCAN_CNT to convert milliseconds into scan cnts.
  * 
  * @member debounce_tick
@@ -128,7 +128,7 @@ typedef struct flex_button
 
     uint16_t scan_cnt;
     uint16_t click_cnt;
-    uint16_t max_combos_click_solt;
+    uint16_t max_multiple_clicks_interval;
 
     uint16_t debounce_tick;
     uint16_t short_press_start_tick;

@@ -142,7 +142,7 @@ static void common_btn_evt_cb(void *arg)
 {
     flex_button_t *btn = (flex_button_t *)arg;
 
-    rt_kprintf("id: [%d - %s]  event: [%d - %30s]  combos: %d\n", 
+    rt_kprintf("id: [%d - %s]  event: [%d - %30s]  repeat: %d\n", 
         btn->id, enum_btn_id_string[btn->id],
         btn->event, enum_event_string[btn->event],
         btn->click_cnt);
@@ -194,7 +194,7 @@ typedef struct flex_button
 
     uint16_t scan_cnt;
     uint16_t click_cnt;
-    uint16_t max_combos_click_solt;
+    uint16_t max_multiple_clicks_interval;
 
     uint16_t debounce_tick;
     uint16_t short_press_start_tick;
@@ -215,7 +215,7 @@ typedef struct flex_button
 | 3 | cb                     | 是 | 设置按键事件回调，用于应用层对按键事件的分类处理 |
 | 4 | scan_cnt               | 否 | 用于记录扫描次数，按键按下是开始从零计数 |
 | 5 | click_cnt              | 否 | 记录单击次数，用于判定单击、连击 |
-| 6 | max_combos_click_solt  | 是 | 连击间隙，用于判定是否结束连击计数，有默认值 `MAX_COMBOS_CLICK_SOLT` |
+| 6 | max_multiple_clicks_interval  | 是 | 连击间隙，用于判定是否结束连击计数，有默认值 `MAX_MULTIPLE_CLICKS_INTERVAL` |
 | 7 | debounce_tick          | 否 | 消抖时间，暂未使用，依靠扫描间隙进行消抖 |
 | 8 | short_press_start_tick | 是 | 设置短按事件触发的起始 tick |
 | 9 | long_press_start_tick  | 是 | 设置长按事件触发的起始 tick |
@@ -225,7 +225,7 @@ typedef struct flex_button
 | 13 | event                 | 否 | 用于记录当前按键事件 |
 | 14 | status                | 否 | 用于记录当前按键的状态，用于内部状态机 |
 
-注意，在使用 `max_combos_click_solt`、`debounce_tick`、`short_press_start_tick`、`long_press_start_tick`、`long_hold_start_tick` 的时候，注意需要使用宏 `**FLEX_MS_TO_SCAN_CNT(ms)**` 将毫秒值转换为扫描次数。因为按键库基于扫描次数运转。示例如下：
+注意，在使用 `max_multiple_clicks_interval`、`debounce_tick`、`short_press_start_tick`、`long_press_start_tick`、`long_hold_start_tick` 的时候，注意需要使用宏 `**FLEX_MS_TO_SCAN_CNT(ms)**` 将毫秒值转换为扫描次数。因为按键库基于扫描次数运转。示例如下：
 
 ```
 user_button[1].short_press_start_tick = FLEX_MS_TO_SCAN_CNT(1500); // 1500 毫秒
