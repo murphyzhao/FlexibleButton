@@ -11,7 +11,7 @@ flexible_button.c
 ''')
 
 if GetDepend(['PKG_USING_FLEXIBLE_BUTTON_DEMO']):
-    src += Glob("flexible_button_demo.c")
+    src += Glob("examples/demo_rtt_iotboard.c")
 
 CPPPATH = [cwd]
 

@@ -1,5 +1,5 @@
 /**
- * @File:    flexible_button_demo.c
+ * @File:    demo_rtt_iotboard.c
  * @Author:  MurphyZhao
  * @Date:    2018-09-29
  * 
@@ -20,10 +20,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
+ * message:
+ * This demo is base on rt-thread IoT Board, reference
+ *     https://github.com/RT-Thread/IoT_Board
+ * Hardware version: RT-Thread IoT Board Pandora v2.51.
+ * 
  * Change logs:
  * Date        Author       Notes
  * 2018-09-29  MurphyZhao   First add
  * 2019-08-02  MurphyZhao   Migrate code to github.com/murphyzhao account
+ * 2020-02-14  MurphyZhao   Fix grammar bug
 */
 
 #include <rtthread.h>
@@ -119,7 +125,8 @@ static void common_btn_evt_cb(void *arg)
         btn->event, enum_event_string[btn->event],
         btn->click_cnt);
 
-    if (flex_button_event_read(&user_button[USER_BUTTON_0]) == flex_button_event_read(&user_button[USER_BUTTON_1]) == FLEX_BTN_PRESS_CLICK)
+    if ((flex_button_event_read(&user_button[USER_BUTTON_0]) == FLEX_BTN_PRESS_CLICK) &&\
+        (flex_button_event_read(&user_button[USER_BUTTON_1]) == FLEX_BTN_PRESS_CLICK))
     {
         rt_kprintf("[combination]: button 0 and button 1\n");
     }

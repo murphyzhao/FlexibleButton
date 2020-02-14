@@ -35,7 +35,7 @@ ARMCC -O0 优化的情况下，FlexibleButton 资源占用如下：
 
 ## 快速体验
 
-FlexibleButton 库中提供了一个测试例程 [`./flexible_button_demo.c`](./flexible_button_demo.c)，该例程基于 RT-Thread OS 进行测试，硬件平台选择了 *RT-Thread IoT Board Pandora v2.51* 开发板。当然你可以选择使用其他的 OS，或者使用裸机测试，只需要移除 OS 相关的特性即可。
+FlexibleButton 库中提供了一个测试例程 [`./examples/demo_rtt_iotboard.c`](./examples/demo_rtt_iotboard.c)，该例程基于 RT-Thread OS 进行测试，硬件平台选择了 *RT-Thread IoT Board Pandora v2.51* 开发板。当然你可以选择使用其他的 OS，或者使用裸机测试，只需要移除 OS 相关的特性即可。
 
 如果你使用自己的硬件平台，只需要将 FlexibleButton 库源码和例程加入你既有的工程下即可。
 
@@ -294,7 +294,7 @@ void flex_button_scan(void);
 
 ### 关于组合按键
 
-该按键库仅做了底层的按键扫描处理，一次扫描可以确定所有的按键状态，并上报对应的按键事件，如果需要支持组合按键，请再封一层，根据按键库返回的事件封装需要的组合按键。[示例程序](./flexible_button_demo.c)提供了简单的实现。
+该按键库仅做了底层的按键扫描处理，一次扫描可以确定所有的按键状态，并上报对应的按键事件，如果需要支持组合按键，请再封一层，根据按键库返回的事件封装需要的组合按键。[示例程序](./examples/demo_rtt_iotboard.c)提供了简单的实现。
 
 ### 关于矩阵键盘
 
