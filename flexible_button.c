@@ -90,7 +90,7 @@ static uint8_t button_cnt = 0;
  * @param button: button structure instance
  * @return Number of keys that have been registered
 */
-int8_t flex_button_register(flex_button_t *button)
+uint8_t flex_button_register(flex_button_t *button)
 {
     flex_button_t *curr = btn_head;
     
@@ -159,13 +159,14 @@ static void flex_button_read(void)
  *        Must be used after 'flex_button_read' API
  * 
  * @param void
- * @return none
+ * @return Activated button count
 */
-static void flex_button_process(void)
+static uint8_t flex_button_process(void)
 {
     uint8_t i;
+    uint8_t active_btn_cnt = 0;
     flex_button_t* target;
-
+    
     for (target = btn_head, i = 0; target != NULL; target = target->next, i ++)
     {
         if (target->status > FLEX_BTN_STAGE_DEFAULT)
@@ -284,7 +285,14 @@ static void flex_button_process(void)
             }
             break;
         }
+        
+        if (target->status > FLEX_BTN_STAGE_DEFAULT)
+        {
+            active_btn_cnt ++;
+        }
     }
+    
+    return active_btn_cnt;
 }
 
 /**
@@ -308,10 +316,10 @@ flex_button_event_t flex_button_event_read(flex_button_t* button)
  *        Sample cycle: 5 - 20ms
  * 
  * @param void
- * @return none
+ * @return Activated button count
 */
-void flex_button_scan(void)
+uint8_t flex_button_scan(void)
 {
     flex_button_read();
-    flex_button_process();
+    return flex_button_process();
 }
