@@ -88,9 +88,9 @@ static uint8_t button_cnt = 0;
  * @brief Register a user button
  * 
  * @param button: button structure instance
- * @return Number of keys that have been registered
+ * @return Number of keys that have been registered, or -1 when error
 */
-uint8_t flex_button_register(flex_button_t *button)
+int32_t flex_button_register(flex_button_t *button)
 {
     flex_button_t *curr = btn_head;
     

@@ -145,7 +145,7 @@ typedef struct flex_button
 extern "C" {
 #endif
 
-uint8_t flex_button_register(flex_button_t *button);
+int32_t flex_button_register(flex_button_t *button);
 flex_button_event_t flex_button_event_read(flex_button_t* button);
 uint8_t flex_button_scan(void);
 
