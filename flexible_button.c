@@ -167,7 +167,7 @@ static uint8_t flex_button_process(void)
     uint8_t active_btn_cnt = 0;
     flex_button_t* target;
     
-    for (target = btn_head, i = 0; target != NULL; target = target->next, i ++)
+    for (target = btn_head, i = button_cnt - 1; target != NULL; target = target->next, i--)
     {
         if (target->status > FLEX_BTN_STAGE_DEFAULT)
         {
