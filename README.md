@@ -85,7 +85,7 @@ INIT_APP_EXPORT(flex_button_main);
 
 `user_button_init();` 初始化代码如下所示：
 
-```
+```C
 static void user_button_init(void)
 {
     int i;
@@ -184,7 +184,7 @@ typedef enum
 
 ### 按键数据结构
 
-```
+```C
 typedef struct flex_button
 {
     struct flex_button* next;
