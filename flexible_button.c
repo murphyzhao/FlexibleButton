@@ -188,7 +188,7 @@ static uint8_t flex_button_process(void)
 
                 EVENT_SET_AND_EXEC_CB(target, FLEX_BTN_PRESS_DOWN);
 
-                /* swtich to button down stage */
+                /* switch to button down stage */
                 target->status = FLEX_BTN_STAGE_DOWN;
             }
             else
@@ -209,7 +209,7 @@ static uint8_t flex_button_process(void)
                                 target->click_cnt :
                                 FLEX_BTN_PRESS_REPEAT_CLICK);
 
-                        /* swtich to button down stage */
+                        /* switch to button down stage */
                         target->status = FLEX_BTN_STAGE_DOWN;
                         target->scan_cnt = 0;
                         target->click_cnt = 0;
@@ -256,7 +256,7 @@ static uint8_t flex_button_process(void)
                 }
                 else
                 {
-                    /* swtich to multiple click stage */
+                    /* switch to multiple click stage */
                     target->status = FLEX_BTN_STAGE_MULTIPLE_CLICK;
                     target->click_cnt ++;
                 }
@@ -266,7 +266,7 @@ static uint8_t flex_button_process(void)
         case FLEX_BTN_STAGE_MULTIPLE_CLICK: /* stage: multiple click */
             if (BTN_IS_PRESSED(i)) /* is pressed */
             {
-                /* swtich to button down stage */
+                /* switch to button down stage */
                 target->status = FLEX_BTN_STAGE_DOWN;
                 target->scan_cnt = 0;
             }
@@ -279,7 +279,7 @@ static uint8_t flex_button_process(void)
                             target->click_cnt :
                             FLEX_BTN_PRESS_REPEAT_CLICK);
 
-                    /* swtich to default stage */
+                    /* switch to default stage */
                     target->status = FLEX_BTN_STAGE_DEFAULT;
                 }
             }
